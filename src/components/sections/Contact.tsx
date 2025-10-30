@@ -1,35 +1,126 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
+import { useScrollAnimation, WEBHOOK_CONFIG, scheduleSiteVisit, type CalendlyOptions } from '@/lib/utils';
+
+// Validation schema
+const validationSchema = Yup.object({
+  name: Yup.string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(50, 'Name must be less than 50 characters')
+    .required('Full name is required'),
+  email: Yup.string()
+    .email('Please enter a valid email address')
+    .required('Email address is required'),
+  phone: Yup.string()
+    .matches(/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number')
+    .required('Phone number is required'),
+  message: Yup.string()
+    .max(500, 'Message must be less than 500 characters')
+});
+
+// Initial form values
+const initialValues = {
+  name: '',
+  email: '',
+  phone: '',
+  message: '',
+};
 
 export default function Contact() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    message: '',
-  });
+  const { elementRef, fadeInUp, staggerAnimation } = useScrollAnimation();
+  
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle form submission
-    console.log('Form submitted:', formData);
-    alert('Thank you for your interest! We will contact you shortly.');
-    setFormData({ name: '', email: '', phone: '', message: '' });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Check for selected floor plan from localStorage
+    const savedPlan = localStorage.getItem('selectedFloorPlan');
+    if (savedPlan) {
+      setSelectedPlan(savedPlan);
+      // Optionally clear it after setting
+      localStorage.removeItem('selectedFloorPlan');
+    }
+
+    // Animate section header
+    fadeInUp('.contact-header');
+    
+    // Animate form and contact info with stagger
+    staggerAnimation('.contact-form, .contact-info', { 
+      from: { opacity: 0, x: -30 },
+      to: { duration: 0.8, stagger: 0.2 }
+    });
+    
+    // Animate contact items
+    staggerAnimation('.contact-item', { 
+      from: { opacity: 0, y: 20 },
+      to: { duration: 0.6, stagger: 0.1 }
+    });
+  }, [fadeInUp, staggerAnimation]);
+
+  const handleFormSubmit = async (
+    values: typeof initialValues, 
+    { setSubmitting, resetForm }: { setSubmitting: (isSubmitting: boolean) => void; resetForm: () => void }
+  ) => {
+    // If webhook is not configured, show fallback
+    if (!WEBHOOK_CONFIG.FORM_CONFIG.ENABLED || !WEBHOOK_CONFIG.FILLOUT_WEBHOOK_URL) {
+      console.log('Form submitted:', values);
+      alert('Thank you for your interest! We will contact you shortly.');
+      resetForm();
+      setSelectedPlan(null);
+      return;
+    }
+
+    setSubmitStatus('idle');
+
+    try {
+      const response = await fetch(WEBHOOK_CONFIG.FILLOUT_WEBHOOK_URL, {
+        method: WEBHOOK_CONFIG.FORM_CONFIG.METHOD,
+        headers: WEBHOOK_CONFIG.FORM_CONFIG.HEADERS,
+        body: JSON.stringify({
+          fullName: values.name,
+          email: values.email,
+          phone: values.phone,
+          message: values.message,
+          interestedPlan: selectedPlan,
+          timestamp: new Date().toISOString(),
+          source: 'Contact Form'
+        }),
+      });
+
+      if (response.ok) {
+        setSubmitStatus('success');
+        resetForm();
+        setSelectedPlan(null);
+      } else {
+        setSubmitStatus('error');
+      }
+    } catch (error) {
+      console.error('Form submission error:', error);
+      setSubmitStatus('error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const handleScheduleSiteVisit = () => {
+    const calendlyOptions: CalendlyOptions = {
+      floorPlan: selectedPlan || undefined,
+      message: 'Site visit request from Villament website',
+    };
+    
+    scheduleSiteVisit(calendlyOptions);
   };
 
   return (
-    <section id="contact" className="py-24 px-6 bg-white">
+    <section ref={elementRef} id="contact" className="py-24 px-6 bg-white">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <div className="contact-header text-center mb-16">
           <div className="inline-block">
             <div className="w-16 h-px bg-gold mx-auto mb-4" />
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -45,120 +136,152 @@ export default function Contact() {
 
         <div className="grid md:grid-cols-2 gap-12">
           {/* Contact Form */}
-          <div>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  required
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors"
-                  placeholder="Enter your full name"
-                />
+          <div className="contact-form">
+            {/* Selected Plan Notification */}
+            {selectedPlan && (
+              <div className="mb-6 p-4 bg-gold/10 border border-gold/20 rounded-lg">
+                <p className="text-gold font-medium">
+                  📋 You're interested in: <span className="font-bold">{selectedPlan}</span>
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Please fill out the form below and mention any specific questions about this plan.
+                </p>
               </div>
+            )}
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors"
-                  placeholder="Enter your email"
-                />
-              </div>
+            <Formik
+              initialValues={initialValues}
+              validationSchema={validationSchema}
+              onSubmit={handleFormSubmit}
+            >
+              {({ isSubmitting }) => (
+                <Form className="space-y-6">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                      Full Name *
+                    </label>
+                    <Field
+                      type="text"
+                      id="name"
+                      name="name"
+                      className="w-full px-4 py-3 border border-gray-300 focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors"
+                      placeholder="Enter your full name"
+                    />
+                    <ErrorMessage name="name" component="div" className="text-red-600 text-sm mt-1" />
+                  </div>
 
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number *
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  required
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors"
-                  placeholder="Enter your phone number"
-                />
-              </div>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address *
+                    </label>
+                    <Field
+                      type="email"
+                      id="email"
+                      name="email"
+                      className="w-full px-4 py-3 border border-gray-300 focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors"
+                      placeholder="Enter your email"
+                    />
+                    <ErrorMessage name="email" component="div" className="text-red-600 text-sm mt-1" />
+                  </div>
 
-              <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                  Message
-                </label>
-                <textarea
-                  id="message"
-                  name="message"
-                  rows={4}
-                  value={formData.message}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors resize-none"
-                  placeholder="Tell us about your requirements"
-                />
-              </div>
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone Number *
+                    </label>
+                    <Field
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      className="w-full px-4 py-3 border border-gray-300 focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors"
+                      placeholder="Enter your phone number"
+                    />
+                    <ErrorMessage name="phone" component="div" className="text-red-600 text-sm mt-1" />
+                  </div>
 
-              <button
-                type="submit"
-                className="w-full px-8 py-4 bg-gold text-white font-semibold tracking-wider hover:bg-gold-dark transition-all duration-300 shadow-lg hover:shadow-xl"
-              >
-                SUBMIT INQUIRY
-              </button>
-            </form>
+                  <div>
+                    <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                      Message
+                    </label>
+                    <Field
+                      as="textarea"
+                      id="message"
+                      name="message"
+                      rows={4}
+                      className="w-full px-4 py-3 border border-gray-300 focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors resize-none"
+                      placeholder="Tell us about your requirements"
+                    />
+                    <ErrorMessage name="message" component="div" className="text-red-600 text-sm mt-1" />
+                  </div>
+
+                  {/* Form Status Messages */}
+                  {submitStatus === 'success' && (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-green-800 text-sm">
+                        ✅ Thank you! Your inquiry has been submitted successfully. We'll get back to you soon.
+                      </p>
+                    </div>
+                  )}
+
+                  {submitStatus === 'error' && (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-red-800 text-sm">
+                        ❌ Sorry, there was an error submitting your inquiry. Please try again or contact us directly.
+                      </p>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full px-8 py-4 bg-gold text-white font-semibold tracking-wider hover:bg-gold-dark disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    {isSubmitting ? 'SENDING...' : 'SUBMIT INQUIRY'}
+                  </button>
+                </Form>
+              )}
+            </Formik>
           </div>
 
           {/* Contact Information */}
-          <div>
+          <div className="contact-info">
             <div className="bg-gray-50 p-8 border border-gray-100 h-full">
               <h3 className="text-2xl font-bold mb-6 text-gray-900">Contact Information</h3>
               
               <div className="space-y-6">
                 {/* Phone */}
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 flex items-center justify-center border-2 border-gold text-gold flex-shrink-0">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="contact-item flex items-start gap-4">
+                  <div className="w-12 h-12 flex items-center justify-center border-2 border-gold text-gold shrink-0">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
                   </div>
                   <div>
                     <div className="font-semibold text-gray-900 mb-1">Phone</div>
-                    <a href="tel:+919876543210" className="text-gray-600 hover:text-gold transition-colors">
-                      +91 98765 43210
+                    <a href="tel:+919901355340" className="text-gray-600 hover:text-gold transition-colors">
+                      +91 99013 55340
                     </a>
                   </div>
                 </div>
 
                 {/* Email */}
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 flex items-center justify-center border-2 border-gold text-gold flex-shrink-0">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="contact-item flex items-start gap-4">
+                  <div className="w-12 h-12 flex items-center justify-center border-2 border-gold text-gold shrink-0">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
                   <div>
                     <div className="font-semibold text-gray-900 mb-1">Email</div>
-                    <a href="mailto:info@thevillament.com" className="text-gray-600 hover:text-gold transition-colors">
-                      info@thevillament.com
+                    <a href="mailto:support@mahalayagroup.com" className="text-gray-600 hover:text-gold transition-colors">
+                      support@mahalayagroup.com
                     </a>
                   </div>
                 </div>
 
                 {/* Address */}
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 flex items-center justify-center border-2 border-gold text-gold flex-shrink-0">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="contact-item flex items-start gap-4">
+                  <div className="w-12 h-12 flex items-center justify-center border-2 border-gold text-gold shrink-0">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
@@ -173,9 +296,9 @@ export default function Contact() {
                 </div>
 
                 {/* Office Hours */}
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 flex items-center justify-center border-2 border-gold text-gold flex-shrink-0">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="contact-item flex items-start gap-4">
+                  <div className="w-12 h-12 flex items-center justify-center border-2 border-gold text-gold shrink-0">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
@@ -193,6 +316,7 @@ export default function Contact() {
               <div className="mt-8 pt-8 border-t border-gray-200">
                 <button
                   type="button"
+                  onClick={handleScheduleSiteVisit}
                   className="w-full px-6 py-3 border-2 border-gold text-gold hover:bg-gold hover:text-white transition-all duration-300 font-semibold tracking-wider"
                 >
                   SCHEDULE SITE VISIT

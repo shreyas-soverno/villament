@@ -52,10 +52,11 @@ export default function Navigation() {
         <button
           type="button"
           onClick={() => scrollToSection('hero')}
-          className="text-2xl font-bold tracking-wider hover:opacity-80 transition-opacity"
+          className="text-2xl font-bold tracking-wider hover:opacity-80 transition-opacity flex flex-col items-start font-heading"
         >
           <span className="text-gray-900">THE</span>{' '}
           <span className="gold-shimmer">VILLAMENT</span>
+          <span className="text-xs text-gray-500 tracking-wider mt-0.5 font-body">A Mahalaya Group project</span>
         </button>
 
         {/* Desktop Navigation */}
@@ -65,7 +66,7 @@ export default function Navigation() {
               type="button"
               key={link.id}
               onClick={() => scrollToSection(link.id)}
-              className="text-gray-700 hover:text-gold transition-colors duration-300 font-medium tracking-wide"
+              className="text-gray-700 hover:text-gold transition-colors duration-300 font-medium tracking-wide font-body"
             >
               {link.label}
             </button>
@@ -113,7 +114,7 @@ export default function Navigation() {
                 type="button"
                 key={link.id}
                 onClick={() => scrollToSection(link.id)}
-                className="block w-full text-left py-2 text-gray-700 hover:text-gold transition-colors duration-300 font-medium"
+                className="block w-full text-left py-2 text-gray-700 hover:text-gold transition-colors duration-300 font-medium font-body"
               >
                 {link.label}
               </button>

@@ -1,6 +1,54 @@
+'use client';
+
 import Image from 'next/image';
+import { useScrollAnimation, scheduleSiteVisit, type CalendlyOptions } from '@/lib/utils';
+import { useEffect } from 'react';
 
 export default function FloorPlans() {
+  const { elementRef, fadeInUp, staggerAnimation } = useScrollAnimation();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Animate section header
+    fadeInUp('.floorplans-header');
+    
+    // Animate floor plan items
+    staggerAnimation('.floorplan-item', { 
+      from: { opacity: 0, y: 60, scale: 0.95 },
+      to: { duration: 0.8, stagger: 0.3 }
+    });
+  }, [fadeInUp, staggerAnimation]);
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const offset = 80;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleKnowMore = (planName: string) => {
+    // Store the selected plan in localStorage so Contact form can access it
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedFloorPlan', planName);
+    }
+    scrollToSection('contact');
+  };
+
+  const handleScheduleVisit = (planName: string) => {
+    const calendlyOptions: CalendlyOptions = {
+      floorPlan: planName,
+      message: `Site visit request for ${planName} from Villament website`,
+    };
+    
+    scheduleSiteVisit(calendlyOptions);
+  };
   const floorPlans = [
     {
       name: '3 BHK Villament',
@@ -11,22 +59,13 @@ export default function FloorPlans() {
       features: ['Double Height Living', 'Private Balconies', 'Open Kitchen', 'Study Room'],
       image: '/images/extracted-003.jpg',
     },
-    {
-      name: '4 BHK Villament',
-      area: '3000 - 3200',
-      bedrooms: 4,
-      bathrooms: 4,
-      description: 'Luxurious 4-bedroom homes with premium finishes',
-      features: ['Master Suite', 'Private Terrace', 'Home Theater Space', 'Servant Quarter'],
-      image: '/images/extracted-015.jpg',
-    },
   ];
 
   return (
-    <section id="floorplans" className="py-24 px-6 bg-gray-50">
+    <section ref={elementRef} id="floorplans" className="py-24 px-6 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <div className="floorplans-header text-center mb-16">
           <div className="inline-block">
             <div className="w-16 h-px bg-gold mx-auto mb-4" />
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -42,16 +81,16 @@ export default function FloorPlans() {
 
         {/* Floor Plans */}
         <div className="space-y-12">
-          {floorPlans.map((plan, index) => (
+          {floorPlans.map((plan, planIndex) => (
             <div
-              key={index}
-              className={`grid md:grid-cols-2 gap-12 items-center ${
-                index % 2 === 1 ? 'md:grid-flow-dense' : ''
+              key={`plan-${plan.name}`}
+              className={`floorplan-item grid md:grid-cols-2 gap-12 items-center ${
+                planIndex % 2 === 1 ? 'md:grid-flow-dense' : ''
               }`}
             >
               {/* Image */}
-              <div className={`relative h-96 bg-gradient-to-br from-gold/10 to-gray-200 rounded-lg overflow-hidden ${
-                index % 2 === 1 ? 'md:col-start-2' : ''
+              <div className={`relative h-96 bg-linear-to-br from-gold/10 to-gray-200 rounded-lg overflow-hidden ${
+                planIndex % 2 === 1 ? 'md:col-start-2' : ''
               }`}>
                 <Image
                   src={plan.image}
@@ -62,7 +101,7 @@ export default function FloorPlans() {
               </div>
 
               {/* Details */}
-              <div className={`${index % 2 === 1 ? 'md:col-start-1 md:row-start-1' : ''}`}>
+              <div className={`${planIndex % 2 === 1 ? 'md:col-start-1 md:row-start-1' : ''}`}>
                 <h3 className="text-3xl font-bold mb-4 text-gray-900">{plan.name}</h3>
                 <p className="text-gray-600 mb-6">{plan.description}</p>
 
@@ -84,9 +123,9 @@ export default function FloorPlans() {
 
                 {/* Features */}
                 <div className="space-y-2 mb-6">
-                  {plan.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-center gap-3">
-                      <svg className="w-5 h-5 text-gold flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  {plan.features.map((feature) => (
+                    <div key={`feature-${feature}`} className="flex items-center gap-3">
+                      <svg className="w-5 h-5 text-gold shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
                       <span className="text-gray-700">{feature}</span>
@@ -94,17 +133,29 @@ export default function FloorPlans() {
                   ))}
                 </div>
 
-                {/* CTA Button */}
-                <button
-                  type="button"
-                  className="px-6 py-3 border-2 border-gold text-gold hover:bg-gold hover:text-white transition-all duration-300 font-semibold tracking-wider"
-                >
-                  DOWNLOAD BROCHURE
-                </button>
+                {/* CTA Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    type="button"
+                    onClick={() => handleKnowMore(plan.name)}
+                    className="px-6 py-3 border-2 border-gold text-gold hover:bg-gold hover:text-white transition-all duration-300 font-semibold tracking-wider"
+                  >
+                    KNOW MORE
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleScheduleVisit(plan.name)}
+                    className="px-6 py-3 bg-gold text-white hover:bg-gold-dark border-2 border-gold hover:border-gold-dark transition-all duration-300 font-semibold tracking-wider"
+                  >
+                    SCHEDULE VISIT
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
+
+
 
         {/* Note */}
         <div className="mt-16 text-center">

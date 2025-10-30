@@ -7,47 +7,47 @@ import "./globals.css";
 const argestaDisplay = localFont({
   src: [
     {
-      path: "../../public/fonts/Argesta Hairline.otf",
+      path: "../../public/fonts/Argesta-Hairline.otf",
       weight: "200",
       style: "normal",
     },
     {
-      path: "../../public/fonts/Argesta Hairline Italic.otf",
+      path: "../../public/fonts/Argesta-Hairline-Italic.otf",
       weight: "200",
       style: "italic",
     },
     {
-      path: "../../public/fonts/Argesta Text.otf",
+      path: "../../public/fonts/Argesta-Text.otf",
       weight: "400",
       style: "normal",
     },
     {
-      path: "../../public/fonts/Argesta Text Italic.otf",
+      path: "../../public/fonts/Argesta-Text-Italic.otf",
       weight: "400",
       style: "italic",
     },
     {
-      path: "../../public/fonts/Argesta Display.otf",
+      path: "../../public/fonts/Argesta-Display.otf",
       weight: "500",
       style: "normal",
     },
     {
-      path: "../../public/fonts/Argesta Display Italic.otf",
+      path: "../../public/fonts/Argesta-Display-Italic.otf",
       weight: "500",
       style: "italic",
     },
     {
-      path: "../../public/fonts/Argesta Headline.otf",
+      path: "../../public/fonts/Argesta-Headline.otf",
       weight: "600",
       style: "normal",
     },
     {
-      path: "../../public/fonts/Argesta Headline Italic.otf",
+      path: "../../public/fonts/Argesta-Headline-Italic.otf",
       weight: "600",
       style: "italic",
     },
     {
-      path: "../../public/fonts/Argesta Text Bold.otf",
+      path: "../../public/fonts/Argesta-Text-Bold.otf",
       weight: "700",
       style: "normal",
     },
@@ -76,10 +76,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${argestaDisplay.variable} ${montserrat.variable} antialiased`}
-      >
+    <html
+      lang="en"
+      className={`${argestaDisplay.variable} ${montserrat.variable} antialiased`}
+    >
+      <head>
+        <link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet" />
+      </head>
+      <body>
         {children}
       </body>
     </html>

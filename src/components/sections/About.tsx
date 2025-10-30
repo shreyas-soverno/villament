@@ -1,6 +1,33 @@
+'use client';
+
 import Image from 'next/image';
+import { useScrollAnimation } from '@/lib/utils';
+import { useEffect } from 'react';
 
 export default function About() {
+  const { elementRef, fadeInUp, staggerAnimation } = useScrollAnimation();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Animate section header
+    fadeInUp('.about-header');
+    
+    // Animate feature content with stagger
+    staggerAnimation('.about-feature > *', { duration: 0.8 });
+    
+    // Animate highlights grid
+    staggerAnimation('.about-highlight', { 
+      from: { opacity: 0, y: 40, scale: 0.95 },
+      to: { duration: 0.6, stagger: 0.15 }
+    });
+    
+    // Animate stats with scale effect
+    staggerAnimation('.about-stat', {
+      from: { opacity: 0, scale: 0.8 },
+      to: { duration: 0.6, ease: 'back.out(1.7)', stagger: 0.2 }
+    });
+  }, [fadeInUp, staggerAnimation]);
   const highlights = [
     {
       title: 'Grand Luxury Homes',
@@ -48,10 +75,10 @@ export default function About() {
   ];
 
   return (
-    <section id="about" className="py-24 px-6 bg-gray-50">
+    <section ref={elementRef} id="about" className="py-24 px-6 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <div className="about-header text-center mb-16">
           <div className="inline-block">
             <div className="w-16 h-px bg-gold mx-auto mb-4" />
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -66,8 +93,8 @@ export default function About() {
         </div>
 
         {/* Feature Image with Text */}
-        <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
-          <div className="relative h-96 bg-gradient-to-br from-gold/10 to-gray-200 rounded-lg overflow-hidden">
+        <div className="about-feature grid md:grid-cols-2 gap-12 items-center mb-20">
+          <div className="relative h-96 bg-linear-to-br from-gold/10 to-gray-200 rounded-lg overflow-hidden">
             <Image
               src="/images/extracted-001.jpg"
               alt="The Villament Exterior"
@@ -112,10 +139,10 @@ export default function About() {
 
         {/* Highlights Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
-          {highlights.map((highlight, index) => (
+          {highlights.map((highlight, highlightIndex) => (
             <div
-              key={index}
-              className="group p-8 bg-white hover:bg-gold/5 border border-gray-100 hover:border-gold transition-all duration-500 hover:shadow-xl hover:-translate-y-2"
+              key={`highlight-${highlightIndex}`}
+              className="about-highlight group p-8 bg-white hover:bg-gold/5 border border-gray-100 hover:border-gold transition-all duration-500 hover:shadow-xl hover:-translate-y-2"
             >
               <div className="w-16 h-16 mx-auto mb-6 border-2 border-gold flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-white transition-all duration-300">
                 {highlight.icon}
@@ -133,10 +160,10 @@ export default function About() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {stats.map((stat, index) => (
+          {stats.map((stat) => (
             <div
-              key={index}
-              className="text-center p-8 bg-white border-2 border-gold/20 hover:border-gold transition-all duration-300"
+              key={`stat-${stat.label}`}
+              className="about-stat text-center p-8 bg-white border-2 border-gold/20 hover:border-gold transition-all duration-300"
             >
               <div className="text-5xl font-bold gold-shimmer mb-2">{stat.number}</div>
               <div className="text-sm text-gray-600 tracking-wider uppercase">{stat.label}</div>

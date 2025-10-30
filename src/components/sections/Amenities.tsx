@@ -1,4 +1,26 @@
+'use client';
+
+import { useScrollAnimation } from '@/lib/utils';
+import { useEffect } from 'react';
+
 export default function Amenities() {
+  const { elementRef, fadeInUp, staggerAnimation } = useScrollAnimation();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Animate section header
+    fadeInUp('.amenities-header');
+    
+    // Animate amenities grid with stagger
+    staggerAnimation('.amenities-card', { 
+      from: { opacity: 0, y: 50, scale: 0.9 },
+      to: { duration: 0.7, stagger: 0.15, ease: 'power2.out' }
+    });
+    
+    // Animate highlight section
+    fadeInUp('.amenities-highlight', 0.5);
+  }, [fadeInUp, staggerAnimation]);
   const amenities = [
     {
       title: 'Swimming Pool',
@@ -75,10 +97,10 @@ export default function Amenities() {
   ];
 
   return (
-    <section id="amenities" className="py-24 px-6 bg-white">
+    <section ref={elementRef} id="amenities" className="py-24 px-6 bg-white">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <div className="amenities-header text-center mb-16">
           <div className="inline-block">
             <div className="w-16 h-px bg-gold mx-auto mb-4" />
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -94,10 +116,10 @@ export default function Amenities() {
 
         {/* Amenities Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {amenities.map((amenity, index) => (
+          {amenities.map((amenity) => (
             <div
-              key={index}
-              className="group p-6 bg-gray-50 hover:bg-white border border-gray-100 hover:border-gold transition-all duration-500 hover:shadow-xl hover:-translate-y-2"
+              key={`amenity-${amenity.title}`}
+              className="amenities-card group p-6 bg-gray-50 hover:bg-white border border-gray-100 hover:border-gold transition-all duration-500 hover:shadow-xl hover:-translate-y-2"
             >
               {/* Icon */}
               <div className="mb-6 text-gold group-hover:scale-110 transition-transform duration-300">
@@ -121,7 +143,7 @@ export default function Amenities() {
         </div>
 
         {/* Featured Amenity Highlight */}
-        <div className="mt-20 p-12 bg-gradient-to-br from-gold/5 to-gray-50 border border-gold/20">
+        <div className="amenities-highlight mt-20 p-12 bg-linear-to-br from-gold/5 to-gray-50 border border-gold/20">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div>
               <div className="text-4xl font-bold text-gold mb-2">785</div>
