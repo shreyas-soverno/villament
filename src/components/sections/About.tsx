@@ -14,7 +14,9 @@ export default function About() {
     fadeInUp('.about-header');
     
     // Animate feature content with stagger
-    staggerAnimation('.about-feature > *', { duration: 0.8 });
+    staggerAnimation('.about-feature > *', { 
+      to: { duration: 0.8 }
+    });
     
     // Animate highlights grid
     staggerAnimation('.about-highlight', { 
