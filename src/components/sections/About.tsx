@@ -96,7 +96,7 @@ export default function About() {
         <div className="about-feature grid md:grid-cols-2 gap-12 items-center mb-20">
           <div className="relative h-96 bg-linear-to-br from-gold/10 to-gray-200 rounded-lg overflow-hidden">
             <Image
-              src="/images/extracted-001.jpg"
+              src="/images/exterior/extracted-001.jpg"
               alt="The Villament Exterior"
               fill
               className="object-cover"

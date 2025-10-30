@@ -68,6 +68,7 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "The Villament - Luxury Living in Dharwad",
   description: "Experience the perfect blend of villa exclusivity and community living in the heart of Dharwad city. Coming Soon.",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
 };
 
 export default function RootLayout({

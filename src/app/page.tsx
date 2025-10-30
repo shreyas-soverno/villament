@@ -7,7 +7,6 @@ import Gallery from '@/components/sections/Gallery';
 import Location from '@/components/sections/Location';
 import Contact from '@/components/sections/Contact';
 import Footer from '@/components/Footer';
-import { TestimonialsSection } from '@/components/sections/Testimonials';
 
 export default function Home() {
   return (
@@ -80,60 +79,6 @@ export default function Home() {
       <Amenities />
       <FloorPlans />
       <Gallery />
-      <TestimonialsSection
-        title="What Our Residents Say"
-        description="Discover why families choose The Villament as their dream home"
-        testimonials={[
-          {
-            author: {
-              name: "Priya Sharma",
-              handle: "@priya_mumbai",
-              avatar: "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=150&h=150&fit=crop&crop=face&fm=jpg&q=80"
-            },
-            text: "The Villament has been a perfect home for our family. The vastu-compliant design and modern amenities create the ideal balance of tradition and comfort."
-          },
-          {
-            author: {
-              name: "Rajesh Kumar",
-              handle: "@rajesh_bangalore",
-              avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face&fm=jpg&q=80"
-            },
-            text: "Excellent connectivity to IT corridors and metro stations. The quality of construction and attention to detail is remarkable. Perfect for working professionals."
-          },
-          {
-            author: {
-              name: "Anita Desai",
-              handle: "@anita_architect",
-              avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=face&fm=jpg&q=80"
-            },
-            text: "As an architect, I appreciate the thoughtful space planning and premium finishes. The club house and amenities rival five-star facilities."
-          },
-          {
-            author: {
-              name: "Vikram Singh",
-              handle: "@vikram_realty",
-              avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face&fm=jpg&q=80"
-            },
-            text: "Invested in The Villament two years ago - the appreciation has been phenomenal. The location and builder reputation make it a blue-chip investment."
-          },
-          {
-            author: {
-              name: "Meera Patel",
-              handle: "@meera_ahmedabad",
-              avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face&fm=jpg&q=80"
-            },
-            text: "Our children love the dedicated play zones and the swimming pool. The society has created a wonderful community feeling with cultural events and festivals."
-          },
-          {
-            author: {
-              name: "Arjun Reddy",
-              handle: "@arjun_hyderabad",
-              avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face&fm=jpg&q=80"
-            },
-            text: "The 24/7 security and power backup give us complete peace of mind. The maintenance team is very responsive and professional."
-          }
-        ]}
-      />
       <Location />
       <Contact />
       <Footer />

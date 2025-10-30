@@ -33,7 +33,7 @@ export default function Navigation() {
     { label: 'Home', id: 'hero' },
     { label: 'About', id: 'about' },
     { label: 'Amenities', id: 'amenities' },
-    { label: 'Floor Plans', id: 'floorplans' },
+    { label: 'Units', id: 'floorplans' },
     { label: 'Gallery', id: 'gallery' },
     { label: 'Location', id: 'location' },
     { label: 'Contact', id: 'contact' },

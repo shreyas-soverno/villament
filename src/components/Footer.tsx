@@ -18,7 +18,7 @@ export default function Footer() {
     { label: 'Home', id: 'hero' },
     { label: 'About', id: 'about' },
     { label: 'Amenities', id: 'amenities' },
-    { label: 'Floor Plans', id: 'floorplans' },
+    { label: 'Units', id: 'units' },
     { label: 'Gallery', id: 'gallery' },
     { label: 'Location', id: 'location' },
     { label: 'Contact', id: 'contact' },

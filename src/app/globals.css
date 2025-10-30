@@ -243,3 +243,25 @@ h1, h2, h3, h4, h5, h6 {
 html:not(.dark) body {
   background-color: #ffffff;
 }
+
+/* Contact form specific styles for better responsive behavior */
+#contact {
+  /* Ensure proper box-sizing for all form elements */
+  * {
+    box-sizing: border-box;
+  }
+  
+  /* Prevent horizontal overflow */
+  .contact-form,
+  .contact-info {
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+  
+  /* Ensure form inputs don't overflow on very small screens */
+  .contact-form input,
+  .contact-form textarea {
+    min-width: 0;
+    max-width: 100%;
+  }
+}

@@ -142,23 +142,6 @@ export default function Amenities() {
           ))}
         </div>
 
-        {/* Featured Amenity Highlight */}
-        <div className="amenities-highlight mt-20 p-12 bg-linear-to-br from-gold/5 to-gray-50 border border-gold/20">
-          <div className="grid md:grid-cols-3 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold text-gold mb-2">785</div>
-              <div className="text-sm text-gray-600 uppercase tracking-wider">Sq.Ft Swimming Pool</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-gold mb-2">500</div>
-              <div className="text-sm text-gray-600 uppercase tracking-wider">Sq.Ft Gym & Spa</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-gold mb-2">24/7</div>
-              <div className="text-sm text-gray-600 uppercase tracking-wider">Security & Power</div>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );

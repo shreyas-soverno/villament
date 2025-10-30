@@ -62,7 +62,7 @@ export const CALENDLY_CONFIG = {
 
 // Register GSAP plugins
 if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger)
+  gsap.registerPlugin(ScrollTrigger);
 }
 
 // Custom hook for scroll-triggered animations
@@ -98,30 +98,40 @@ export function useScrollAnimation() {
 
   const staggerAnimation = (
     selector: string,
-    animation?: gsap.TweenVars,
+    animation?: { from?: gsap.TweenVars; to?: gsap.TweenVars & { stagger?: number } },
     trigger?: ScrollTrigger.Vars
   ) => {
     if (typeof window === "undefined") return
 
-    gsap.fromTo(
-      selector,
-      { opacity: 0, y: 30, scale: 0.95 },
-      {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.6,
-        ease: "power2.out",
-        stagger: 0.1,
-        ...animation,
-        scrollTrigger: {
-          trigger: elementRef.current,
-          start: "top 85%",
-          toggleActions: "play none none none",
-          ...trigger,
-        },
-      }
-    )
+    const fromVars = {
+      opacity: 0,
+      y: 30,
+      scale: 0.95,
+      ...animation?.from,
+    };
+
+    // Extract stagger from to vars and keep it separate
+    const { stagger = 0.1, ...toAnimation } = animation?.to || {};
+
+    // Set initial values first
+    gsap.set(selector, fromVars);
+
+    // Then animate to final values with stagger
+    gsap.to(selector, {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      duration: 0.6,
+      ease: "power2.out",
+      stagger: stagger,
+      ...toAnimation,
+      scrollTrigger: {
+        trigger: elementRef.current,
+        start: "top 85%",
+        toggleActions: "play none none none",
+        ...trigger,
+      },
+    });
   }
 
   const fadeInUp = (selector: string, delay = 0) => {
@@ -382,5 +392,191 @@ export const useCalendlyScheduling = () => {
     scheduleVisit,
     scheduleWithFloorPlan,
     scheduleFromContact,
+  };
+};
+
+// Maps and Directions Utilities
+export interface LocationCoordinates {
+  latitude: number;
+  longitude: number;
+}
+
+export interface DirectionsOptions {
+  destination: string;
+  coordinates?: LocationCoordinates;
+  label?: string;
+}
+
+// The Villament location details
+export const VILLAMENT_LOCATION = {
+  name: 'The Villament',
+  address: '100m off Pune-Bangalore Highway, Dharwad, Karnataka',
+  coordinates: {
+    // These are approximate coordinates for Dharwad area
+    // You should replace these with exact coordinates
+    latitude: 15.4589,
+    longitude: 75.0078,
+  },
+  googleMapsUrl: 'https://maps.app.goo.gl/fXaBDJwkZZVHG9to7?g_st=aw',
+} as const;
+
+// Detect user's device/platform
+export const detectPlatform = () => {
+  if (typeof window === 'undefined') return 'web';
+  
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  const platform = window.navigator.platform?.toLowerCase() || '';
+  
+  // iOS detection (iPhone, iPad, iPod)
+  if (/iphone|ipad|ipod/.test(userAgent) || (platform.includes('mac') && 'ontouchend' in document)) {
+    return 'ios';
+  }
+  
+  // Android detection
+  if (/android/.test(userAgent)) {
+    return 'android';
+  }
+  
+  // macOS detection
+  if (platform.includes('mac') || userAgent.includes('mac')) {
+    return 'macos';
+  }
+  
+  // Windows detection
+  if (platform.includes('win') || userAgent.includes('windows')) {
+    return 'windows';
+  }
+  
+  return 'web';
+};
+
+// Open appropriate maps application based on device
+export const openMapsDirections = (options: DirectionsOptions = {
+  destination: VILLAMENT_LOCATION.address,
+  coordinates: VILLAMENT_LOCATION.coordinates,
+  label: VILLAMENT_LOCATION.name,
+}) => {
+  const platform = detectPlatform();
+  const { destination, coordinates, label } = options;
+  
+  try {
+    switch (platform) {
+      case 'ios': {
+        // iOS: Try Apple Maps first, fallback to Google Maps
+        const appleMapsiOS = coordinates
+          ? `http://maps.apple.com/?q=${encodeURIComponent(label || destination)}&ll=${coordinates.latitude},${coordinates.longitude}&dirflg=d`
+          : `http://maps.apple.com/?daddr=${encodeURIComponent(destination)}&dirflg=d`;
+        
+        // Try Apple Maps
+        window.location.href = appleMapsiOS;
+        
+        // Fallback to Google Maps after a short delay if Apple Maps fails
+        setTimeout(() => {
+          const googleMapsiOS = coordinates
+            ? `https://maps.google.com/maps?daddr=${coordinates.latitude},${coordinates.longitude}&dirflg=d`
+            : `https://maps.google.com/maps?daddr=${encodeURIComponent(destination)}&dirflg=d`;
+          window.open(googleMapsiOS, '_blank', 'noopener,noreferrer');
+        }, 1500);
+        break;
+      }
+        
+      case 'android': {
+        // Android: Try Google Maps app first, fallback to web
+        const googleMapsAndroid = coordinates
+          ? `google.navigation:q=${coordinates.latitude},${coordinates.longitude}&mode=d`
+          : `google.navigation:q=${encodeURIComponent(destination)}&mode=d`;
+        
+        // Try Google Maps app
+        window.location.href = googleMapsAndroid;
+        
+        // Fallback to web Google Maps after a short delay
+        setTimeout(() => {
+          const googleMapsWeb = coordinates
+            ? `https://maps.google.com/maps?daddr=${coordinates.latitude},${coordinates.longitude}&dirflg=d`
+            : `https://maps.google.com/maps?daddr=${encodeURIComponent(destination)}&dirflg=d`;
+          window.open(googleMapsWeb, '_blank', 'noopener,noreferrer');
+        }, 1500);
+        break;
+      }
+        
+      case 'macos': {
+        // macOS: Try Apple Maps first, fallback to Google Maps
+        const appleMapsDesktop = coordinates
+          ? `http://maps.apple.com/?q=${encodeURIComponent(label || destination)}&ll=${coordinates.latitude},${coordinates.longitude}&dirflg=d`
+          : `http://maps.apple.com/?daddr=${encodeURIComponent(destination)}&dirflg=d`;
+        
+        // Try Apple Maps
+        window.location.href = appleMapsDesktop;
+        
+        // Fallback to Google Maps in new tab after a short delay
+        setTimeout(() => {
+          const googleMapsDesktop = coordinates
+            ? `https://maps.google.com/maps?daddr=${coordinates.latitude},${coordinates.longitude}&dirflg=d`
+            : `https://maps.google.com/maps?daddr=${encodeURIComponent(destination)}&dirflg=d`;
+          window.open(googleMapsDesktop, '_blank', 'noopener,noreferrer');
+        }, 1500);
+        break;
+      }
+        
+      default: {
+        // Windows and other platforms: Open Google Maps in new tab
+        // Also use the provided Google Maps URL if available
+        if (options === undefined || (options.destination === VILLAMENT_LOCATION.address)) {
+          // Use the specific Google Maps URL for Villament
+          window.open(VILLAMENT_LOCATION.googleMapsUrl, '_blank', 'noopener,noreferrer');
+        } else {
+          // Use generic Google Maps URL
+          const googleMapsGeneric = coordinates
+            ? `https://maps.google.com/maps?daddr=${coordinates.latitude},${coordinates.longitude}&dirflg=d`
+            : `https://maps.google.com/maps?daddr=${encodeURIComponent(destination)}&dirflg=d`;
+          window.open(googleMapsGeneric, '_blank', 'noopener,noreferrer');
+        }
+        break;
+      }
+    }
+    
+    // Analytics tracking (optional)
+    if (typeof window !== 'undefined' && 'gtag' in window) {
+      const windowWithGtag = window as { gtag?: (...args: unknown[]) => void };
+      if (typeof windowWithGtag.gtag === 'function') {
+        windowWithGtag.gtag('event', 'get_directions', {
+          event_category: 'user_interaction',
+          event_label: destination,
+          platform: platform,
+        });
+      }
+    }
+    
+  } catch (error) {
+    console.error('Failed to open maps directions:', error);
+    
+    // Ultimate fallback: Open the provided Google Maps URL or generic Google Maps
+    const fallbackUrl = (options === undefined || options.destination === VILLAMENT_LOCATION.address)
+      ? VILLAMENT_LOCATION.googleMapsUrl
+      : `https://maps.google.com/maps?daddr=${encodeURIComponent(destination)}`;
+    
+    window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+  }
+};
+
+// Convenience function specifically for Villament directions
+export const getVillamentDirections = () => {
+  openMapsDirections();
+};
+
+// React hook for maps integration
+export const useMapsDirections = () => {
+  const openDirections = useCallback((options?: DirectionsOptions) => {
+    openMapsDirections(options);
+  }, []);
+
+  const getDirectionsToVillament = useCallback(() => {
+    getVillamentDirections();
+  }, []);
+
+  return {
+    openDirections,
+    getDirectionsToVillament,
+    detectPlatform,
   };
 };

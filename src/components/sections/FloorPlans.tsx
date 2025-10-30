@@ -57,7 +57,7 @@ export default function FloorPlans() {
       bathrooms: 3,
       description: 'Spacious 3-bedroom homes with double-height living areas',
       features: ['Double Height Living', 'Private Balconies', 'Open Kitchen', 'Study Room'],
-      image: '/images/extracted-003.jpg',
+      image: '/images/exterior/extracted-046.jpg',
     },
   ];
 
@@ -69,7 +69,7 @@ export default function FloorPlans() {
           <div className="inline-block">
             <div className="w-16 h-px bg-gold mx-auto mb-4" />
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Floor <span className="gold-shimmer">Plans</span>
+              Units
             </h2>
             <div className="w-24 h-px bg-gold/30 mx-auto" />
           </div>
