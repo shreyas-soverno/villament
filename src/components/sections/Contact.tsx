@@ -59,9 +59,7 @@ export default function Contact() {
     values: typeof initialValues, 
     { setSubmitting, resetForm }: { setSubmitting: (isSubmitting: boolean) => void; resetForm: () => void }
   ) => {
-    // If webhook is not enabled or no sheets webhook configured, show fallback
-    // (we no longer use Fillout; use a Sheets webhook or server-side endpoint)
-    if (!WEBHOOK_CONFIG.FORM_CONFIG.ENABLED || !WEBHOOK_CONFIG.GOOGLE_SHEETS_WEBHOOK_URL) {
+    if (!WEBHOOK_CONFIG.FORM_CONFIG.ENABLED || !WEBHOOK_CONFIG.WEBHOOK_URL) {
       console.log('Form submitted (no webhook configured):', values);
       alert('Thank you for your interest! We will contact you shortly.');
       resetForm();
@@ -71,7 +69,12 @@ export default function Contact() {
     setSubmitStatus('idle');
 
     try {
-      const sheetsUrl = WEBHOOK_CONFIG.GOOGLE_SHEETS_WEBHOOK_URL;
+      const configuredUrl = WEBHOOK_CONFIG.WEBHOOK_URL;
+      // If the configured URL points at Google Apps Script, route via our server proxy
+      // to avoid browser CORS/preflight issues. Otherwise, use the configured URL.
+      const sheetsUrl = configuredUrl && configuredUrl.includes('script.google.com')
+        ? '/api/proxy-google'
+        : configuredUrl;
 
       if (sheetsUrl) {
         const sheetsPayload = {
