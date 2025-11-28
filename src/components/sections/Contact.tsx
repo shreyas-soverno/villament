@@ -34,18 +34,10 @@ export default function Contact() {
   const { getDirectionsToVillament } = useMapsDirections();
   
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Check for selected floor plan from localStorage
-    const savedPlan = localStorage.getItem('selectedFloorPlan');
-    if (savedPlan) {
-      setSelectedPlan(savedPlan);
-      // Optionally clear it after setting
-      localStorage.removeItem('selectedFloorPlan');
-    }
 
     // Animate section header
     fadeInUp('.contact-header');
@@ -67,39 +59,52 @@ export default function Contact() {
     values: typeof initialValues, 
     { setSubmitting, resetForm }: { setSubmitting: (isSubmitting: boolean) => void; resetForm: () => void }
   ) => {
-    // If webhook is not configured, show fallback
-    if (!WEBHOOK_CONFIG.FORM_CONFIG.ENABLED || !WEBHOOK_CONFIG.FILLOUT_WEBHOOK_URL) {
-      console.log('Form submitted:', values);
+    // If webhook is not enabled or no sheets webhook configured, show fallback
+    // (we no longer use Fillout; use a Sheets webhook or server-side endpoint)
+    if (!WEBHOOK_CONFIG.FORM_CONFIG.ENABLED || !WEBHOOK_CONFIG.GOOGLE_SHEETS_WEBHOOK_URL) {
+      console.log('Form submitted (no webhook configured):', values);
       alert('Thank you for your interest! We will contact you shortly.');
       resetForm();
-      setSelectedPlan(null);
       return;
     }
 
     setSubmitStatus('idle');
 
     try {
-      const response = await fetch(WEBHOOK_CONFIG.FILLOUT_WEBHOOK_URL, {
-        method: WEBHOOK_CONFIG.FORM_CONFIG.METHOD,
-        headers: WEBHOOK_CONFIG.FORM_CONFIG.HEADERS,
-        body: JSON.stringify({
+      const sheetsUrl = WEBHOOK_CONFIG.GOOGLE_SHEETS_WEBHOOK_URL;
+
+      if (sheetsUrl) {
+        const sheetsPayload = {
           fullName: values.name,
           email: values.email,
           phone: values.phone,
           message: values.message,
-          interestedPlan: selectedPlan,
           timestamp: new Date().toISOString(),
-          source: 'Contact Form'
-        }),
-      });
+        };
 
-      if (response.ok) {
-        setSubmitStatus('success');
-        resetForm();
-        setSelectedPlan(null);
-      } else {
-        setSubmitStatus('error');
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+        const sheetsResp = await fetch(sheetsUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(sheetsPayload),
+        });
+
+        if (sheetsResp.ok) {
+          setSubmitStatus('success');
+          resetForm();
+        } else {
+          console.error('Sheets webhook responded with status', sheetsResp.status);
+          setSubmitStatus('error');
+        }
+
+        setSubmitting(false);
+        return;
       }
+
+      // If we somehow reach here without a configured sheets URL, mark error
+      console.warn('No Sheets webhook configured to receive form submissions.');
+      setSubmitStatus('error');
     } catch (error) {
       console.error('Form submission error:', error);
       setSubmitStatus('error');
@@ -110,7 +115,6 @@ export default function Contact() {
 
   const handleScheduleSiteVisit = () => {
     const calendlyOptions: CalendlyOptions = {
-      floorPlan: selectedPlan || undefined,
       message: 'Site visit request from Villament website',
     };
     
@@ -118,10 +122,10 @@ export default function Contact() {
   };
 
   return (
-    <section ref={elementRef} id="contact" className="py-12 sm:py-16 md:py-24 px-4 sm:px-6 bg-white">
+    <section ref={elementRef} id="contact" className="py-12 sm:py-16 md:py-24 px-6 bg-white">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="contact-header text-center mb-8 sm:mb-12 md:mb-16">
+          <div className="contact-header text-center mb-8 sm:mb-12 md:mb-16">
           <div className="inline-block">
             <div className="w-12 sm:w-16 h-px bg-gold mx-auto mb-4" />
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
@@ -129,34 +133,23 @@ export default function Contact() {
             </h2>
             <div className="w-16 sm:w-20 md:w-24 h-px bg-gold/30 mx-auto" />
           </div>
-          <p className="mt-4 sm:mt-6 text-base sm:text-lg text-gray-600 max-w-3xl mx-auto px-4">
+          <p className="mt-4 sm:mt-6 text-base sm:text-lg text-gray-600 max-w-3xl mx-auto">
             Interested in making The Villament your home? Contact us today to schedule a site visit 
             or to learn more about our exclusive units.
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8 sm:gap-12">
+        <div className="grid md:grid-cols-2 gap-12">
           {/* Contact Form */}
-          <div className="contact-form">
-            {/* Selected Plan Notification */}
-            {selectedPlan && (
-              <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gold/10 border border-gold/20 rounded-lg">
-                <p className="text-gold font-medium text-sm sm:text-base">
-                  📋 You're interested in: <span className="font-bold">{selectedPlan}</span>
-                </p>
-                <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                  Please fill out the form below and mention any specific questions about this plan.
-                </p>
-              </div>
-            )}
-
-            <Formik
-              initialValues={initialValues}
-              validationSchema={validationSchema}
-              onSubmit={handleFormSubmit}
-            >
-              {({ isSubmitting }) => (
-                <Form className="space-y-4 sm:space-y-6">
+          <div className="contact-form w-full">
+            <div className="mx-auto w-full max-w-md sm:max-w-none bg-gray-50 p-6 md:p-8 border border-gray-100 rounded-lg h-full flex flex-col justify-between text-center sm:text-left">
+              <Formik
+                initialValues={initialValues}
+                validationSchema={validationSchema}
+                onSubmit={handleFormSubmit}
+              >
+                {({ isSubmitting }) => (
+                  <Form className="space-y-4 sm:space-y-6  ml-8 sm:ml-0">
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                       Full Name *
@@ -165,7 +158,7 @@ export default function Contact() {
                       type="text"
                       id="name"
                       name="name"
-                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors text-sm sm:text-base"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 bg-white focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors text-sm sm:text-base"
                       placeholder="Enter your full name"
                     />
                     <ErrorMessage name="name" component="div" className="text-red-600 text-sm mt-1" />
@@ -179,7 +172,7 @@ export default function Contact() {
                       type="email"
                       id="email"
                       name="email"
-                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors text-sm sm:text-base"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 bg-white focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors text-sm sm:text-base"
                       placeholder="Enter your email"
                     />
                     <ErrorMessage name="email" component="div" className="text-red-600 text-sm mt-1" />
@@ -193,7 +186,7 @@ export default function Contact() {
                       type="tel"
                       id="phone"
                       name="phone"
-                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors text-sm sm:text-base"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 bg-white focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors text-sm sm:text-base"
                       placeholder="Enter your phone number"
                     />
                     <ErrorMessage name="phone" component="div" className="text-red-600 text-sm mt-1" />
@@ -208,7 +201,7 @@ export default function Contact() {
                       id="message"
                       name="message"
                       rows={4}
-                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors resize-none text-sm sm:text-base"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 bg-white focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors resize-none text-sm sm:text-base"
                       placeholder="Tell us about your requirements"
                     />
                     <ErrorMessage name="message" component="div" className="text-red-600 text-sm mt-1" />
@@ -242,21 +235,22 @@ export default function Contact() {
               )}
             </Formik>
           </div>
+          </div>
 
           {/* Contact Information */}
-          <div className="contact-info">
-            <div className="bg-gray-50 p-4 sm:p-6 md:p-8 border border-gray-100 h-full">
+          <div className="contact-info w-full ml-8 sm:ml-0">
+            <div className="mx-auto w-full max-w-md sm:max-w-none bg-gray-50 p-6 md:p-8 border border-gray-100 rounded-lg h-full flex flex-col justify-between text-center sm:text-left">
               <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-900">Contact Information</h3>
               
               <div className="space-y-4 sm:space-y-6">
                 {/* Phone */}
-                <div className="contact-item flex items-start gap-3 sm:gap-4">
+                <div className="contact-item flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center border-2 border-gold text-gold shrink-0">
                     <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
                   </div>
-                  <div>
+                  <div className="text-center sm:text-left">
                     <div className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">Phone</div>
                     <a href="tel:+919901355340" className="text-gray-600 hover:text-gold transition-colors text-sm sm:text-base">
                       +91 99013 55340
@@ -265,13 +259,13 @@ export default function Contact() {
                 </div>
 
                 {/* Email */}
-                <div className="contact-item flex items-start gap-3 sm:gap-4">
+                <div className="contact-item flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center border-2 border-gold text-gold shrink-0">
                     <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 text-center sm:text-left">
                     <div className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">Email</div>
                     <a href="mailto:support@mahalayagroup.com" className="text-gray-600 hover:text-gold transition-colors text-sm sm:text-base break-all">
                       support@mahalayagroup.com
@@ -280,14 +274,14 @@ export default function Contact() {
                 </div>
 
                 {/* Address */}
-                <div className="contact-item flex items-start gap-3 sm:gap-4">
+                <div className="contact-item flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center border-2 border-gold text-gold shrink-0">
                     <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   </div>
-                  <div>
+                  <div className="text-center sm:text-left">
                     <div className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">Address</div>
                     <p className="text-gray-600 text-sm sm:text-base mb-2">
                       100m off Pune-Bangalore Highway<br />
@@ -305,13 +299,13 @@ export default function Contact() {
                 </div>
 
                 {/* Office Hours */}
-                <div className="contact-item flex items-start gap-3 sm:gap-4">
+                <div className="contact-item flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center border-2 border-gold text-gold shrink-0">
                     <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <div>
+                  <div className="text-center sm:text-left">
                     <div className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">Office Hours</div>
                     <p className="text-gray-600 text-sm sm:text-base">
                       Monday - Saturday: 9:00 AM - 6:00 PM<br />

@@ -10,11 +10,8 @@ export function cn(...inputs: ClassValue[]) {
 
 // Webhook Configuration
 export const WEBHOOK_CONFIG = {
-  // Add your Fillout webhook URL here - this will receive the form submissions
-  // Example: 'https://api.fillout.com/v1/api/forms/YOUR_FORM_ID/submissions'
-  // Or any custom webhook endpoint that accepts JSON POST requests
-  FILLOUT_WEBHOOK_URL: process.env.NEXT_PUBLIC_FILLOUT_WEBHOOK_URL || '',
-  
+  WEBHOOK_URL: process.env.NEXT_PUBLIC_GOOGLE_SHEETS_WEBHOOK_URL || '',
+
   // Form configuration
   FORM_CONFIG: {
     // Set to true to enable webhook integration
