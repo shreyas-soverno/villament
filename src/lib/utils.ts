@@ -10,7 +10,9 @@ export function cn(...inputs: ClassValue[]) {
 
 // Webhook Configuration
 export const WEBHOOK_CONFIG = {
-  WEBHOOK_URL: process.env.NEXT_PUBLIC_GOOGLE_SHEETS_WEBHOOK_URL || '',
+  // Generic webhook URL (if used)
+  WEBHOOK_URL: process.env.NEXT_PUBLIC_WEBHOOK_URL || '',
+  GOOGLE_SHEETS_WEBHOOK_URL: process.env.NEXT_PUBLIC_GOOGLE_SHEETS_WEBHOOK_URL || '',
 
   // Form configuration
   FORM_CONFIG: {
